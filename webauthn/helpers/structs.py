@@ -56,6 +56,7 @@ class WebAuthnBaseModel(BaseModel):
             # values
             return v
 
+
 ################
 #
 # Fundamental data structures
@@ -72,6 +73,7 @@ class AuthenticatorTransport(str, Enum):
         `BLE`: Bluetooth Low Energy
         `INTERNAL`: Direct connection (read: a platform authenticator)
         `CABLE`: Cloud Assisted Bluetooth Low Energy
+        `HYBRID`: A combination of (often separate) data-transport and proximity mechanisms
 
     https://www.w3.org/TR/webauthn-2/#enum-transport
     """
@@ -81,6 +83,7 @@ class AuthenticatorTransport(str, Enum):
     BLE = "ble"
     INTERNAL = "internal"
     CABLE = "cable"
+    HYBRID = "hybrid"
 
 
 class AuthenticatorAttachment(str, Enum):
@@ -411,13 +414,18 @@ class AuthenticatorDataFlags(WebAuthnBaseModel):
     Attributes:
         `up`: [U]ser was [P]resent
         `uv`: [U]ser was [V]erified
+        `be`: [B]ackup [E]ligible
+        `bs`: [B]ackup [S]tate
         `at`: [AT]tested credential is included
         `ed`: [E]xtension [D]ata is included
+
     https://www.w3.org/TR/webauthn-2/#flags
     """
 
     up: bool
     uv: bool
+    be: bool
+    bs: bool
     at: bool
     ed: bool
 
@@ -540,3 +548,24 @@ class AuthenticationCredential(WebAuthnBaseModel):
     type: Literal[
         PublicKeyCredentialType.PUBLIC_KEY
     ] = PublicKeyCredentialType.PUBLIC_KEY
+
+
+################
+#
+# Credential Backup State
+#
+################
+
+
+class CredentialDeviceType(str, Enum):
+    """A determination of the number of devices a credential can be used from
+
+    Members:
+        `SINGLE_DEVICE`: A credential that is bound to a single device
+        `MULTI_DEVICE`: A credential that can be used from multiple devices (e.g. passkeys)
+
+    https://w3c.github.io/webauthn/#sctn-credential-backup (L3 Draft)
+    """
+
+    SINGLE_DEVICE = "single_device"
+    MULTI_DEVICE = "multi_device"
