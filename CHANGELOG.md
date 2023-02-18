@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.7.2
+
+**Changes:**
+
+- Update `cryptography` to 39.0.1 (and its dependency `pyOpenSSL` to 23.0.0) ([#148](https://github.com/duo-labs/py_webauthn/pull/148))
+  - See ["39.0.1 - 2023-02-07" in cryptography's CHANGELOG](https://github.com/pyca/cryptography/blob/main/CHANGELOG.rst#3901---2023-02-07) for more info
+
+## v1.7.1
+
+**Changes:**
+
+- Add support for `from webauthn import *` syntax with proper use of `__all__` ([#146](https://github.com/duo-labs/py_webauthn/pull/146))
+
 ## 1.7.0
 
 **Changes:**
