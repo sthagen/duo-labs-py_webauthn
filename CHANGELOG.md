@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.10.1
+
+**Changes:**
+
+- Fix parsing error caused by registration responses from certain models of authenticators that incorrectly CBOR-encode their `authData` after creating an Ed25519 public keys ([#167](https://github.com/duo-labs/py_webauthn/pull/167))
+
+## v1.10.0
+
+**Changes:**
+
+- Support use in projects using either Pydantic v1 or v2 ([#166](https://github.com/duo-labs/py_webauthn/pull/166))
+
 ## v1.9.0
 
 **Changes:**
