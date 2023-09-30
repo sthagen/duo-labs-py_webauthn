@@ -8,10 +8,12 @@ from webauthn.helpers import (
     parse_attestation_object,
     parse_client_data_json,
     parse_backup_flags,
+    parse_registration_credential_json,
 )
 from webauthn.helpers.cose import COSEAlgorithmIdentifier
 from webauthn.helpers.exceptions import InvalidRegistrationResponse
 from webauthn.helpers.structs import (
+    PYDANTIC_V2,
     AttestationFormat,
     ClientDataType,
     CredentialDeviceType,
@@ -63,7 +65,7 @@ expected_token_binding_statuses = [
 
 def verify_registration_response(
     *,
-    credential: RegistrationCredential,
+    credential: Union[str, dict, RegistrationCredential],
     expected_challenge: bytes,
     expected_rp_id: str,
     expected_origin: Union[str, List[str]],
@@ -78,12 +80,20 @@ def verify_registration_response(
     """Verify an authenticator's response to navigator.credentials.create()
 
     Args:
-        `credential`: The value returned from `navigator.credentials.create()`.
-        `expected_challenge`: The challenge passed to the authenticator within the preceding registration options.
-        `expected_rp_id`: The Relying Party's unique identifier as specified in the precending registration options.
-        `expected_origin`: The domain, with HTTP protocol (e.g. "https://domain.here"), on which the registration should have occurred. Can also be a list of expected origins.
-        (optional) `require_user_verification`: Whether or not to require that the authenticator verified the user.
-        (optional) `supported_pub_key_algs`: A list of public key algorithm IDs the RP chooses to restrict support to. Defaults to all supported algorithm IDs.
+        - `credential`: The value returned from `navigator.credentials.create()`. Can be either a
+          stringified JSON object, a plain dict, or an instance of RegistrationCredential
+        - `expected_challenge`: The challenge passed to the authenticator within the preceding
+          registration options.
+        - `expected_rp_id`: The Relying Party's unique identifier as specified in the precending
+          registration options.
+        - `expected_origin`: The domain, with HTTP protocol (e.g. "https://domain.here"), on which
+          the registration should have occurred. Can also be a list of expected origins.
+        - (optional) `require_user_verification`: Whether or not to require that the authenticator
+          verified the user.
+        - (optional) `supported_pub_key_algs`: A list of public key algorithm IDs the RP chooses to
+          restrict support to. Defaults to all supported algorithm IDs.
+        - (optional) `pem_root_certs_bytes_by_fmt`: A list of root certificates, in PEM format, to
+          be used to validate the certificate chains for specific attestation statement formats.
 
     Returns:
         Information about the authenticator and registration
@@ -91,6 +101,8 @@ def verify_registration_response(
     Raises:
         `helpers.exceptions.InvalidRegistrationResponse` if the response cannot be verified
     """
+    if isinstance(credential, str) or isinstance(credential, dict):
+        credential = parse_registration_credential_json(credential)
 
     verified = False
 
@@ -138,7 +150,7 @@ def verify_registration_response(
                 f'Unexpected token_binding status of "{status}", expected one of "{",".join(expected_token_binding_statuses)}"'
             )
 
-    attestation_object = parse_attestation_object(response.attestation_object)
+    attestation_object = parse_attestation_object(response.attestation_object)  # TODO: Issue #173
 
     auth_data = attestation_object.auth_data
 
@@ -198,7 +210,11 @@ def verify_registration_response(
     if attestation_object.fmt == AttestationFormat.NONE:
         # A "none" attestation should not contain _anything_ in its attestation
         # statement
-        num_att_stmt_fields_set = len(attestation_object.att_stmt.__fields_set__)
+        if PYDANTIC_V2:
+            num_att_stmt_fields_set = len(attestation_object.att_stmt.model_fields_set)  # type: ignore[attr-defined]
+        else:
+            num_att_stmt_fields_set = len(attestation_object.att_stmt.__fields_set__)
+
         if num_att_stmt_fields_set > 0:
             raise InvalidRegistrationResponse(
                 "None attestation had unexpected attestation statement"

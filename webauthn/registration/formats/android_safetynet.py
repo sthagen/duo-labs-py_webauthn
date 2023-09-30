@@ -2,7 +2,6 @@ import base64
 import hashlib
 from typing import List
 
-import cbor2
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
@@ -11,6 +10,7 @@ from cryptography.x509.oid import NameOID
 from webauthn.helpers.cose import COSEAlgorithmIdentifier
 from webauthn.helpers import (
     base64url_to_bytes,
+    parse_cbor,
     validate_certificate_chain,
     verify_safetynet_timestamp,
     verify_signature,
@@ -20,7 +20,7 @@ from webauthn.helpers.exceptions import (
     InvalidRegistrationResponse,
 )
 from webauthn.helpers.known_root_certs import globalsign_r2, globalsign_root_ca
-from webauthn.helpers.structs import AttestationStatement, WebAuthnBaseModel
+from webauthn.helpers.structs import PYDANTIC_V2, AttestationStatement, WebAuthnBaseModel
 
 
 class SafetyNetJWSHeader(WebAuthnBaseModel):
@@ -87,8 +87,13 @@ def verify_android_safetynet(
             "Response JWS did not have three parts (SafetyNet)"
         )
 
-    header = SafetyNetJWSHeader.parse_raw(base64url_to_bytes(jws_parts[0]))
-    payload = SafetyNetJWSPayload.parse_raw(base64url_to_bytes(jws_parts[1]))
+    if PYDANTIC_V2:
+        header = SafetyNetJWSHeader.model_validate_json(base64url_to_bytes(jws_parts[0]))  # type: ignore[attr-defined]
+        payload = SafetyNetJWSPayload.model_validate_json(base64url_to_bytes(jws_parts[1]))  # type: ignore[attr-defined]
+    else:
+        header = SafetyNetJWSHeader.parse_raw(base64url_to_bytes(jws_parts[0]))
+        payload = SafetyNetJWSPayload.parse_raw(base64url_to_bytes(jws_parts[1]))
+
     signature_bytes_str: str = jws_parts[2]
 
     # Verify that the nonce attribute in the payload of response is identical to the
@@ -96,7 +101,7 @@ def verify_android_safetynet(
     # clientDataHash.
 
     # Extract attStmt bytes from attestation_object
-    attestation_dict = cbor2.loads(attestation_object)
+    attestation_dict = parse_cbor(attestation_object)
     authenticator_data_bytes = attestation_dict["authData"]
 
     # Generate a hash of client_data_json
