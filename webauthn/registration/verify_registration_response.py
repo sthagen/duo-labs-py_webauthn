@@ -1,6 +1,6 @@
 import hashlib
 from dataclasses import dataclass, asdict
-from typing import List, Mapping, Optional, Union
+from typing import Any, Dict, List, Mapping, Optional, Union
 
 from webauthn.helpers import (
     aaguid_to_string,
@@ -66,7 +66,7 @@ expected_token_binding_statuses = [
 
 def verify_registration_response(
     *,
-    credential: Union[str, dict, RegistrationCredential],
+    credential: Union[str, Dict[str, Any], RegistrationCredential],
     expected_challenge: bytes,
     expected_rp_id: str,
     expected_origin: Union[str, List[str]],
