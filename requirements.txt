@@ -1,4 +1,4 @@
-asn1crypto==1.5.1
+pyasn1==0.6.2
 black==24.8.0
 cbor2==5.6.5
 cffi==1.17.1
@@ -20,3 +20,4 @@ six==1.16.0
 toml==0.10.2
 tomli==2.0.1
 typing_extensions==4.12.2
+types-pyasn1==0.6.0.20250914
