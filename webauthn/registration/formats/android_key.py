@@ -1,7 +1,8 @@
 import hashlib
 from typing import List
 
-from asn1crypto.core import OctetString
+from pyasn1.type.univ import OctetString
+from pyasn1.codec.der.decoder import decode as der_decode
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
@@ -164,7 +165,11 @@ def verify_android_key(
     # want
     ext_value_wrapper: UnrecognizedExtension = ext_key_description.value
     ext_value: bytes = ext_value_wrapper.value
-    parsed_ext = KeyDescription.load(ext_value)
+    parsed_ext, trailing_garbage = der_decode(ext_value, asn1Spec = KeyDescription())
+    if trailing_garbage:
+        raise InvalidRegistrationResponse(
+            f"Extension {ext_key_description_oid} (Android key) has trailing garbage"
+        )
 
     # Verify that the attestationChallenge field in the attestation certificate extension data
     # is identical to clientDataHash.
@@ -182,26 +187,26 @@ def verify_android_key(
     # The AuthorizationList.allApplications field is not present on either authorization
     # list (softwareEnforced nor teeEnforced), since PublicKeyCredential MUST be scoped
     # to the RP ID.
-    if software_enforced["allApplications"].native is not None:
+    if software_enforced["allApplications"].hasValue():
         raise InvalidRegistrationResponse(
             "allApplications field was present in softwareEnforced (Android Key)"
         )
 
-    if tee_enforced["allApplications"].native is not None:
+    if tee_enforced["allApplications"].hasValue():
         raise InvalidRegistrationResponse(
             "allApplications field was present in teeEnforced (Android Key)"
         )
 
     # The value in the AuthorizationList.origin field is equal to KM_ORIGIN_GENERATED.
-    origin = tee_enforced["origin"].native
-    if origin != KeyOrigin.GENERATED:
+    origin = tee_enforced["origin"]
+    if origin != KeyOrigin.GENERATED.value:
         raise InvalidRegistrationResponse(
             f"teeEnforced.origin {origin} was not {KeyOrigin.GENERATED}"
         )
 
     # The value in the AuthorizationList.purpose field is equal to KM_PURPOSE_SIGN.
-    purpose = tee_enforced["purpose"].native
-    if purpose != [KeyPurpose.SIGN]:
+    purpose = tee_enforced["purpose"]
+    if purpose != [KeyPurpose.SIGN.value]:
         raise InvalidRegistrationResponse(
             f"teeEnforced.purpose {purpose} was not [{KeyPurpose.SIGN}]"
         )
