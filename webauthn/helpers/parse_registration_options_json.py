@@ -1,6 +1,6 @@
 import json
 from json.decoder import JSONDecodeError
-from typing import Union, Optional, List
+from typing import Any, Dict, Union, Optional, List
 
 
 from .structs import (
@@ -23,7 +23,7 @@ from .base64url_to_bytes import base64url_to_bytes
 
 
 def parse_registration_options_json(
-    json_val: Union[str, dict]
+    json_val: Union[str, Dict[str, Any]]
 ) -> PublicKeyCredentialCreationOptions:
     """
     Parse a JSON form of registration options, as either stringified JSON or a plain dict, into an

@@ -1,10 +1,11 @@
 # Changelog
 
-## v2.8.0 (alpha1)
+## v2.7.1
 
 **Changes:**
 
-- `verify_registration_response()` and `verify_authentication_response()` now support use of ML-DSA public keys for authenticators with PQC support. Run `pip install dilithium-py` to enable this capability ([#260](https://github.com/duo-labs/py_webauthn/pull/260))
+- This project now uses the [pyasn1](https://github.com/pyasn1/pyasn1/) library to parse ASN.1-encoded values ([#263](https://github.com/duo-labs/py_webauthn/pull/263), h/t @ggirol-rc)
+- Some bare `dict` type annotations have been replaced with `Dict[str, Any]` to satisfy stricter type checking setups ([#262](https://github.com/duo-labs/py_webauthn/pull/262), h/t @typestring)
 
 ## v2.7.0
 

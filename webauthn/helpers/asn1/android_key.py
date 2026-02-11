@@ -1,6 +1,9 @@
 from enum import Enum
 
-from asn1crypto.core import (
+from pyasn1.type import tag
+from pyasn1.type.namedtype import NamedTypes, NamedType, OptionalNamedType
+from pyasn1.type.namedval import NamedValues
+from pyasn1.type.univ import (
     Boolean,
     Enumerated,
     Integer,
@@ -12,75 +15,261 @@ from asn1crypto.core import (
 
 
 class Integers(SetOf):
-    _child_spec = Integer
+    # type error ignored due to https://github.com/python/typeshed/issues/15369
+    componentType = Integer()  # type: ignore
 
 
 class SecurityLevel(Enumerated):
-    _map = {
-        0: "Software",
-        1: "TrustedEnvironment",
-        2: "StrongBox",
-    }
+    namedValues = NamedValues(
+        ("Software", 0),
+        ("TrustedEnvironment", 1),
+        ("StrongBox", 2),
+    )
 
 
 class VerifiedBootState(Enumerated):
-    _map = {
-        0: "Verified",
-        1: "SelfSigned",
-        2: "Unverified",
-        3: "Failed",
-    }
+    namedValues = NamedValues(
+        ("Verified", 0),
+        ("SelfSigned", 1),
+        ("Unverified", 2),
+        ("Failed", 3),
+    )
 
 
 class RootOfTrust(Sequence):
-    _fields = [
-        ("verifiedBootKey", OctetString),
-        ("deviceLocked", Boolean),
-        ("verifiedBootState", VerifiedBootState),
-        ("verifiedBootHash", OctetString),
-    ]
+    componentType = NamedTypes(
+        NamedType("verifiedBootKey", OctetString()),
+        NamedType("deviceLocked", Boolean()),
+        NamedType("verifiedBootState", VerifiedBootState()),
+        NamedType("verifiedBootHash", OctetString()),
+    )
 
 
 class AuthorizationList(Sequence):
-    _fields = [
-        ("purpose", Integers, {"explicit": 1, "optional": True}),
-        ("algorithm", Integer, {"explicit": 2, "optional": True}),
-        ("keySize", Integer, {"explicit": 3, "optional": True}),
-        ("digest", Integers, {"explicit": 5, "optional": True}),
-        ("padding", Integers, {"explicit": 6, "optional": True}),
-        ("ecCurve", Integer, {"explicit": 10, "optional": True}),
-        ("rsaPublicExponent", Integer, {"explicit": 200, "optional": True}),
-        ("rollbackResistance", Null, {"explicit": 303, "optional": True}),
-        ("activeDateTime", Integer, {"explicit": 400, "optional": True}),
-        ("originationExpireDateTime", Integer, {"explicit": 401, "optional": True}),
-        ("usageExpireDateTime", Integer, {"explicit": 402, "optional": True}),
-        ("noAuthRequired", Null, {"explicit": 503, "optional": True}),
-        ("userAuthType", Integer, {"explicit": 504, "optional": True}),
-        ("authTimeout", Integer, {"explicit": 505, "optional": True}),
-        ("allowWhileOnBody", Null, {"explicit": 506, "optional": True}),
-        ("trustedUserPresenceRequired", Null, {"explicit": 507, "optional": True}),
-        ("trustedConfirmationRequired", Null, {"explicit": 508, "optional": True}),
-        ("unlockedDeviceRequired", Null, {"explicit": 509, "optional": True}),
-        ("allApplications", Null, {"explicit": 600, "optional": True}),
-        ("applicationId", OctetString, {"explicit": 601, "optional": True}),
-        ("creationDateTime", Integer, {"explicit": 701, "optional": True}),
-        ("origin", Integer, {"explicit": 702, "optional": True}),
-        ("rollbackResistant", Null, {"explicit": 703, "optional": True}),
-        ("rootOfTrust", RootOfTrust, {"explicit": 704, "optional": True}),
-        ("osVersion", Integer, {"explicit": 705, "optional": True}),
-        ("osPatchLevel", Integer, {"explicit": 706, "optional": True}),
-        ("attestationApplicationId", OctetString, {"explicit": 709, "optional": True}),
-        ("attestationIdBrand", OctetString, {"explicit": 710, "optional": True}),
-        ("attestationIdDevice", OctetString, {"explicit": 711, "optional": True}),
-        ("attestationIdProduct", OctetString, {"explicit": 712, "optional": True}),
-        ("attestationIdSerial", OctetString, {"explicit": 713, "optional": True}),
-        ("attestationIdImei", OctetString, {"explicit": 714, "optional": True}),
-        ("attestationIdMeid", OctetString, {"explicit": 715, "optional": True}),
-        ("attestationIdManufacturer", OctetString, {"explicit": 716, "optional": True}),
-        ("attestationIdModel", OctetString, {"explicit": 717, "optional": True}),
-        ("vendorPatchLevel", Integer, {"explicit": 718, "optional": True}),
-        ("bootPatchLevel", Integer, {"explicit": 719, "optional": True}),
-    ]
+    componentType = NamedTypes(
+        OptionalNamedType(
+            "purpose",
+            Integers().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1)
+            ),
+        ),
+        OptionalNamedType(
+            "algorithm",
+            Integer().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 2)
+            ),
+        ),
+        OptionalNamedType(
+            "keySize",
+            Integer().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 3)
+            ),
+        ),
+        OptionalNamedType(
+            "digest",
+            Integers().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 5)
+            ),
+        ),
+        OptionalNamedType(
+            "padding",
+            Integers().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 6)
+            ),
+        ),
+        OptionalNamedType(
+            "ecCurve",
+            Integer().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 10)
+            ),
+        ),
+        OptionalNamedType(
+            "rsaPublicExponent",
+            Integer().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 200)
+            ),
+        ),
+        OptionalNamedType(
+            "rollbackResistance",
+            Null().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 303)
+            ),
+        ),
+        OptionalNamedType(
+            "activeDateTime",
+            Integer().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 400)
+            ),
+        ),
+        OptionalNamedType(
+            "originationExpireDateTime",
+            Integer().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 401)
+            ),
+        ),
+        OptionalNamedType(
+            "usageExpireDateTime",
+            Integer().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 402)
+            ),
+        ),
+        OptionalNamedType(
+            "noAuthRequired",
+            Null().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 503)
+            ),
+        ),
+        OptionalNamedType(
+            "userAuthType",
+            Integer().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 504)
+            ),
+        ),
+        OptionalNamedType(
+            "authTimeout",
+            Integer().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 505)
+            ),
+        ),
+        OptionalNamedType(
+            "allowWhileOnBody",
+            Null().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 506)
+            ),
+        ),
+        OptionalNamedType(
+            "trustedUserPresenceRequired",
+            Null().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 507)
+            ),
+        ),
+        OptionalNamedType(
+            "trustedConfirmationRequired",
+            Null().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 508)
+            ),
+        ),
+        OptionalNamedType(
+            "unlockedDeviceRequired",
+            Null().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 509)
+            ),
+        ),
+        OptionalNamedType(
+            "allApplications",
+            Null().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 600)
+            ),
+        ),
+        OptionalNamedType(
+            "applicationId",
+            OctetString().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 601)
+            ),
+        ),
+        OptionalNamedType(
+            "creationDateTime",
+            Integer().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 701)
+            ),
+        ),
+        OptionalNamedType(
+            "origin",
+            Integer().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 702)
+            ),
+        ),
+        OptionalNamedType(
+            "rollbackResistant",
+            Null().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 703)
+            ),
+        ),
+        OptionalNamedType(
+            "rootOfTrust",
+            RootOfTrust().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 704)
+            ),
+        ),
+        OptionalNamedType(
+            "osVersion",
+            Integer().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 705)
+            ),
+        ),
+        OptionalNamedType(
+            "osPatchLevel",
+            Integer().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 706)
+            ),
+        ),
+        OptionalNamedType(
+            "attestationApplicationId",
+            OctetString().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 709)
+            ),
+        ),
+        OptionalNamedType(
+            "attestationIdBrand",
+            OctetString().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 710)
+            ),
+        ),
+        OptionalNamedType(
+            "attestationIdDevice",
+            OctetString().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 711)
+            ),
+        ),
+        OptionalNamedType(
+            "attestationIdProduct",
+            OctetString().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 712)
+            ),
+        ),
+        OptionalNamedType(
+            "attestationIdSerial",
+            OctetString().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 713)
+            ),
+        ),
+        OptionalNamedType(
+            "attestationIdImei",
+            OctetString().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 714)
+            ),
+        ),
+        OptionalNamedType(
+            "attestationIdMeid",
+            OctetString().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 715)
+            ),
+        ),
+        OptionalNamedType(
+            "attestationIdManufacturer",
+            OctetString().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 716)
+            ),
+        ),
+        OptionalNamedType(
+            "attestationIdModel",
+            OctetString().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 717)
+            ),
+        ),
+        OptionalNamedType(
+            "vendorPatchLevel",
+            Integer().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 718)
+            ),
+        ),
+        OptionalNamedType(
+            "bootPatchLevel",
+            Integer().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 719)
+            ),
+        ),
+    )
 
 
 class KeyDescription(Sequence):
@@ -93,16 +282,16 @@ class KeyDescription(Sequence):
     See https://source.android.com/security/keystore/attestation#schema
     """
 
-    _fields = [
-        ("attestationVersion", Integer),
-        ("attestationSecurityLevel", SecurityLevel),
-        ("keymasterVersion", Integer),
-        ("keymasterSecurityLevel", SecurityLevel),
-        ("attestationChallenge", OctetString),
-        ("uniqueId", OctetString),
-        ("softwareEnforced", AuthorizationList),
-        ("teeEnforced", AuthorizationList),
-    ]
+    componentType = NamedTypes(
+        NamedType("attestationVersion", Integer()),
+        NamedType("attestationSecurityLevel", SecurityLevel()),
+        NamedType("keymasterVersion", Integer()),
+        NamedType("keymasterSecurityLevel", SecurityLevel()),
+        NamedType("attestationChallenge", OctetString()),
+        NamedType("uniqueId", OctetString()),
+        NamedType("softwareEnforced", AuthorizationList()),
+        NamedType("teeEnforced", AuthorizationList()),
+    )
 
 
 class KeyOrigin(int, Enum):

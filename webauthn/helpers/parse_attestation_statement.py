@@ -1,7 +1,9 @@
+from typing import Any, Dict
+
 from .structs import AttestationStatement
 
 
-def parse_attestation_statement(val: dict) -> AttestationStatement:
+def parse_attestation_statement(val: Dict[str, Any]) -> AttestationStatement:
     """
     Turn `response.attestationObject.attStmt` into structured data
     """
