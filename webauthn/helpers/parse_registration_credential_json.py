@@ -1,6 +1,6 @@
 import json
 from json.decoder import JSONDecodeError
-from typing import Union, Optional, List
+from typing import Any, Dict, Union, Optional, List
 
 from .base64url_to_bytes import base64url_to_bytes
 from .exceptions import InvalidRegistrationResponse, InvalidJSONStructure
@@ -13,7 +13,9 @@ from .structs import (
 )
 
 
-def parse_registration_credential_json(json_val: Union[str, dict]) -> RegistrationCredential:
+def parse_registration_credential_json(
+    json_val: Union[str, Dict[str, Any]]
+) -> RegistrationCredential:
     """
     Parse a JSON form of a registration credential, as either a stringified JSON object or a
     plain dict, into an instance of RegistrationCredential

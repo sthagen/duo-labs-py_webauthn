@@ -1,6 +1,6 @@
 import json
 from json import JSONDecodeError
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from .base64url_to_bytes import base64url_to_bytes
 from .exceptions import InvalidJSONStructure, InvalidAuthenticationOptions
@@ -13,7 +13,7 @@ from .structs import (
 
 
 def parse_authentication_options_json(
-    json_val: Union[str, dict]
+    json_val: Union[str, Dict[str, Any]]
 ) -> PublicKeyCredentialRequestOptions:
     """
     Parse a JSON form of authentication options, as either stringified JSON or a plain dict, into an

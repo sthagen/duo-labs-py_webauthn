@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import hashlib
-from typing import List, Union
+from typing import Any, Dict, List, Union
 
 from cryptography.exceptions import InvalidSignature
 
@@ -46,7 +46,7 @@ expected_token_binding_statuses = [
 
 def verify_authentication_response(
     *,
-    credential: Union[str, dict, AuthenticationCredential],
+    credential: Union[str, Dict[str, Any], AuthenticationCredential],
     expected_challenge: bytes,
     expected_rp_id: str,
     expected_origin: Union[str, List[str]],
