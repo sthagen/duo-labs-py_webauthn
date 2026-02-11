@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.7.1
+
+**Changes:**
+
+- This project now uses the [pyasn1](https://github.com/pyasn1/pyasn1/) library to parse ASN.1-encoded values ([#263](https://github.com/duo-labs/py_webauthn/pull/263), h/t @ggirol-rc)
+- Some bare `dict` type annotations have been replaced with `Dict[str, Any]` to satisfy stricter type checking setups ([#262](https://github.com/duo-labs/py_webauthn/pull/262), h/t @typestring)
+
 ## v2.7.0
 
 **Changes:**
