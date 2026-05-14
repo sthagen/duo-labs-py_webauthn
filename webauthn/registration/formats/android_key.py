@@ -35,6 +35,7 @@ from webauthn.helpers.known_root_certs import (
     google_hardware_attestation_root_2,
     google_hardware_attestation_root_3,
     google_hardware_attestation_root_4,
+    google_hardware_attestation_root_5,
 )
 from webauthn.helpers.structs import AttestationStatement
 
@@ -87,6 +88,7 @@ def verify_android_key(
     pem_root_certs_bytes.append(google_hardware_attestation_root_2)
     pem_root_certs_bytes.append(google_hardware_attestation_root_3)
     pem_root_certs_bytes.append(google_hardware_attestation_root_4)
+    pem_root_certs_bytes.append(google_hardware_attestation_root_5)
 
     if x5c_root_cert_pem not in pem_root_certs_bytes:
         raise InvalidRegistrationResponse(

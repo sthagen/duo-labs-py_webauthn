@@ -269,6 +269,24 @@ class AuthorizationList(Sequence):
                 explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 719)
             ),
         ),
+        OptionalNamedType(
+            "deviceUniqueAttestation",
+            Null().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 720)
+            ),
+        ),
+        OptionalNamedType(
+            "attestationIdSecondImei",
+            OctetString().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 723)
+            ),
+        ),
+        OptionalNamedType(
+            "moduleHash",
+            OctetString().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 724)
+            ),
+        ),
     )
 
 
