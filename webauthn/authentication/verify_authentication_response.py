@@ -58,7 +58,7 @@ def verify_authentication_response(
 
     Args:
         - `credential`: The value returned from `navigator.credentials.get()`. Can be either a
-          stringified JSON object, a plain dict, or an instance of RegistrationCredential
+          stringified JSON object, a plain dict, or an instance of AuthenticationCredential
         - `expected_challenge`: The challenge passed to the authenticator within the preceding
           authentication options.
         - `expected_rp_id`: The Relying Party's unique identifier as specified in the preceding

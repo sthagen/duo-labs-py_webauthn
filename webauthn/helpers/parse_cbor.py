@@ -2,6 +2,7 @@ from typing import Any
 
 import cbor2
 
+from .byteslike_to_bytes import byteslike_to_bytes
 from .exceptions import InvalidCBORData
 
 
@@ -13,6 +14,7 @@ def parse_cbor(data: bytes) -> Any:
         `helpers.exceptions.InvalidCBORData` if data cannot be decoded
     """
     try:
+        data = byteslike_to_bytes(data)
         to_return = cbor2.loads(data)
     except Exception as exc:
         raise InvalidCBORData("Could not decode CBOR data") from exc
