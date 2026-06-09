@@ -68,3 +68,7 @@ class InvalidBackupFlags(WebAuthnException):
 
 class InvalidCBORData(WebAuthnException):
     pass
+
+
+class InvalidAttestationObjectStructure(WebAuthnException):
+    pass

@@ -394,7 +394,8 @@ TPM_MANUFACTURERS: Mapping[str, TPMManufacturerInfo] = {
     "id:48504900": TPMManufacturerInfo(name="HPI", id="HPI"),
     "id:48504500": TPMManufacturerInfo(name="HPE", id="HPE"),
     "id:48495349": TPMManufacturerInfo(name="Huawei", id="HISI"),
-    "id:49424d00": TPMManufacturerInfo(name="IBM", id="IBM"),
+    # IBM ID is "id:49424d00" in the TCG registry; normalizing it to "id:49424D00" for easier lookup
+    "id:49424D00": TPMManufacturerInfo(name="IBM", id="IBM"),
     "id:49465800": TPMManufacturerInfo(name="Infineon", id="IFX"),
     "id:494E5443": TPMManufacturerInfo(name="Intel", id="INTC"),
     "id:4C454E00": TPMManufacturerInfo(name="Lenovo", id="LEN"),

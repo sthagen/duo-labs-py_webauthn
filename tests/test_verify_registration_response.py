@@ -10,7 +10,11 @@ from webauthn.helpers import (
     parse_cbor,
     parse_attestation_object,
 )
-from webauthn.helpers.exceptions import InvalidRegistrationResponse, InvalidCBORData
+from webauthn.helpers.exceptions import (
+    InvalidAttestationObjectStructure,
+    InvalidRegistrationResponse,
+    InvalidJSONStructure,
+)
 from webauthn.helpers.known_root_certs import globalsign_r2
 from webauthn.helpers.structs import (
     AttestationFormat,
@@ -247,8 +251,7 @@ class TestVerifyRegistrationResponse(TestCase):
         assert verification.fmt == AttestationFormat.NONE
 
     def test_supports_already_parsed_credential(self) -> None:
-        parsed_credential = parse_registration_credential_json(
-            """{
+        parsed_credential = parse_registration_credential_json("""{
                 "id": "9y1xA8Tmg1FEmT-c7_fvWZ_uoTuoih3OvR45_oAK-cwHWhAbXrl2q62iLVTjiyEZ7O7n-CROOY494k7Q3xrs_w",
                 "rawId": "9y1xA8Tmg1FEmT-c7_fvWZ_uoTuoih3OvR45_oAK-cwHWhAbXrl2q62iLVTjiyEZ7O7n-CROOY494k7Q3xrs_w",
                 "response": {
@@ -260,8 +263,7 @@ class TestVerifyRegistrationResponse(TestCase):
                 "transports": [
                     "cable"
                 ]
-            }"""
-        )
+            }""")
 
         challenge = base64url_to_bytes(
             "TwN7n4WTyGKLc4ZY-qGsFqKnHM4nglqsyV0ICJlN2TO9XiRyFtrkaDwUvsql-gkLJXP6fnF1MlrZ53Mm4R7Cvw"
@@ -325,10 +327,64 @@ class TestVerifyRegistrationResponse(TestCase):
         rp_id = "localhost"
         expected_origin = "http://localhost:5000"
 
-        with self.assertRaises(InvalidCBORData):
+        bad_values = [
+            "",
+            "AA",  # cbor2.dumps(0)
+            "AQ",  # cbor2.dumps(1)
+            "GRPn",  # cbor2.dumps(999)
+            "GYmP",  # cbor2.dumps(99999)
+            "YXg",  # cbor2.dumps("x")
+            "gwECAw",  # cbor2.dumps([1,2,3])
+            "9g",  # cbor2.dumps(None)
+        ]
+
+        for value in bad_values:
+            with self.assertRaises(InvalidRegistrationResponse) as exc:
+                _cred = dict(credential)
+                _cred["response"]["attestationObject"] = value
+
+                verify_registration_response(
+                    credential=_cred,
+                    expected_challenge=challenge,
+                    expected_origin=expected_origin,
+                    expected_rp_id=rp_id,
+                )
+
+            self.assertEqual(
+                exc.exception.__str__(),
+                "attestationObject was malformed. See __cause__ for more info",
+            )
+            self.assertIsInstance(exc.exception.__cause__, InvalidAttestationObjectStructure)
+
+    def test_raises_useful_error_on_bad_client_data_json(self) -> None:
+        credential = {
+            "id": "9y1xA8Tmg1FEmT-c7_fvWZ_uoTuoih3OvR45_oAK-cwHWhAbXrl2q62iLVTjiyEZ7O7n-CROOY494k7Q3xrs_w",
+            "rawId": "9y1xA8Tmg1FEmT-c7_fvWZ_uoTuoih3OvR45_oAK-cwHWhAbXrl2q62iLVTjiyEZ7O7n-CROOY494k7Q3xrs_w",
+            "response": {
+                "attestationObject": "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YVjESZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2NFAAAAFwAAAAAAAAAAAAAAAAAAAAAAQPctcQPE5oNRRJk_nO_371mf7qE7qIodzr0eOf6ACvnMB1oQG165dqutoi1U44shGezu5_gkTjmOPeJO0N8a7P-lAQIDJiABIVggSFbUJF-42Ug3pdM8rDRFu_N5oiVEysPDB6n66r_7dZAiWCDUVnB39FlGypL-qAoIO9xWHtJygo2jfDmHl-_eKFRLDA",
+                "clientDataJSON": "",  # <--- Empty
+            },
+            "type": "public-key",
+            "clientExtensionResults": {},
+            "transports": ["cable"],
+        }
+
+        challenge = base64url_to_bytes(
+            "TwN7n4WTyGKLc4ZY-qGsFqKnHM4nglqsyV0ICJlN2TO9XiRyFtrkaDwUvsql-gkLJXP6fnF1MlrZ53Mm4R7Cvw"
+        )
+        rp_id = "localhost"
+        expected_origin = "http://localhost:5000"
+
+        with self.assertRaises(InvalidRegistrationResponse) as exc:
             verify_registration_response(
                 credential=credential,
                 expected_challenge=challenge,
                 expected_origin=expected_origin,
                 expected_rp_id=rp_id,
             )
+
+        self.assertEqual(
+            exc.exception.__str__(),
+            "clientDataJSON was malformed. See __cause__ for more info",
+        )
+        self.assertIsInstance(exc.exception.__cause__, InvalidJSONStructure)

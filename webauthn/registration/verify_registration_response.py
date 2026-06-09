@@ -121,7 +121,12 @@ def verify_registration_response(
     client_data_bytes = byteslike_to_bytes(response.client_data_json)
     attestation_object_bytes = byteslike_to_bytes(response.attestation_object)
 
-    client_data = parse_client_data_json(client_data_bytes)
+    try:
+        client_data = parse_client_data_json(client_data_bytes)
+    except Exception as exc:
+        raise InvalidRegistrationResponse(
+            "clientDataJSON was malformed. See __cause__ for more info"
+        ) from exc
 
     if client_data.type != ClientDataType.WEBAUTHN_CREATE:
         raise InvalidRegistrationResponse(
@@ -151,7 +156,12 @@ def verify_registration_response(
                 f'Unexpected token_binding status of "{status}", expected one of "{",".join(expected_token_binding_statuses)}"'
             )
 
-    attestation_object = parse_attestation_object(attestation_object_bytes)
+    try:
+        attestation_object = parse_attestation_object(attestation_object_bytes)
+    except Exception as exc:
+        raise InvalidRegistrationResponse(
+            "attestationObject was malformed. See __cause__ for more info"
+        ) from exc
 
     auth_data = attestation_object.auth_data
 

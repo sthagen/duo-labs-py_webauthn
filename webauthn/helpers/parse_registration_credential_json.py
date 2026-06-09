@@ -14,7 +14,7 @@ from .structs import (
 
 
 def parse_registration_credential_json(
-    json_val: Union[str, Dict[str, Any]]
+    json_val: Union[str, Dict[str, Any]],
 ) -> RegistrationCredential:
     """
     Parse a JSON form of a registration credential, as either a stringified JSON object or a

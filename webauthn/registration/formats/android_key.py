@@ -71,8 +71,13 @@ def verify_android_key(
     x5c_no_root = attestation_statement.x5c[:-1]
     x5c_root_cert = attestation_statement.x5c[-1]
 
-    x5c_root_cert_x509 = x509.load_der_x509_certificate(x5c_root_cert)
-    x5c_root_cert_pem = x5c_root_cert_x509.public_bytes(Encoding.PEM)
+    try:
+        x5c_root_cert_x509 = x509.load_der_x509_certificate(x5c_root_cert)
+        x5c_root_cert_pem = x5c_root_cert_x509.public_bytes(Encoding.PEM)
+    except Exception as exc:
+        raise InvalidRegistrationResponse(
+            "Could not parse x5c root certificate. See __cause__ for more info (Android Key)"
+        ) from exc
 
     # Make sure x509 forms a complete, valid cert chain
     try:
@@ -114,9 +119,14 @@ def verify_android_key(
     # Verify that sig is a valid signature over the concatenation of authenticatorData
     # and clientDataHash using the public key in the first certificate in x5c with the
     # algorithm specified in alg.
-    attestation_cert_bytes = attestation_statement.x5c[0]
-    attestation_cert = x509.load_der_x509_certificate(attestation_cert_bytes)
-    attestation_cert_pub_key = attestation_cert.public_key()
+    try:
+        attestation_cert_bytes = attestation_statement.x5c[0]
+        attestation_cert = x509.load_der_x509_certificate(attestation_cert_bytes)
+        attestation_cert_pub_key = attestation_cert.public_key()
+    except Exception as exc:
+        raise InvalidRegistrationResponse(
+            "Could not parse attestation certificate public key. See __cause__ for more info (Android Key)"
+        ) from exc
 
     try:
         verify_signature(
@@ -167,7 +177,7 @@ def verify_android_key(
     # want
     ext_value_wrapper: UnrecognizedExtension = ext_key_description.value
     ext_value: bytes = ext_value_wrapper.value
-    parsed_ext, trailing_garbage = der_decode(ext_value, asn1Spec = KeyDescription())
+    parsed_ext, trailing_garbage = der_decode(ext_value, asn1Spec=KeyDescription())
     if trailing_garbage:
         raise InvalidRegistrationResponse(
             f"Extension {ext_key_description_oid} (Android key) has trailing garbage"
