@@ -93,7 +93,7 @@ def parse_registration_credential_json(
         )
     except Exception as exc:
         raise InvalidRegistrationResponse(
-            "Could not parse registration credential from JSON data"
+            "Could not parse registration credential from JSON data. See __cause__ for more info"
         ) from exc
 
     return registration_credential

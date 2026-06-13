@@ -2,7 +2,11 @@ from unittest import TestCase
 
 from webauthn import verify_authentication_response
 from webauthn.helpers import base64url_to_bytes, parse_authentication_credential_json
-from webauthn.helpers.exceptions import InvalidAuthenticationResponse
+from webauthn.helpers.exceptions import (
+    InvalidAuthenticationResponse,
+    InvalidAuthenticatorDataStructure,
+    InvalidJSONStructure,
+)
 
 
 class TestVerifyAuthenticationResponse(TestCase):
@@ -224,8 +228,7 @@ class TestVerifyAuthenticationResponse(TestCase):
         )
 
     def test_supports_already_parsed_credential(self) -> None:
-        parsed_credential = parse_authentication_credential_json(
-            """{
+        parsed_credential = parse_authentication_credential_json("""{
             "id": "ZoIKP1JQvKdrYj1bTUPJ2eTUsbLeFkv-X5xJQNr4k6s",
             "rawId": "ZoIKP1JQvKdrYj1bTUPJ2eTUsbLeFkv-X5xJQNr4k6s",
             "response": {
@@ -236,8 +239,7 @@ class TestVerifyAuthenticationResponse(TestCase):
             },
             "type": "public-key",
             "clientExtensionResults": {}
-        }"""
-        )
+        }""")
         challenge = base64url_to_bytes(
             "iPmAi1Pp1XL6oAgq3PWZtZPnZa1zFUDoGbaQ0_KvVG1lF2s3Rt_3o4uSzccy0tmcTIpTTT4BU1T-I4maavndjQ"
         )
@@ -294,3 +296,65 @@ class TestVerifyAuthenticationResponse(TestCase):
         )
 
         assert verification.new_sign_count == 1
+
+    def test_raises_on_bad_authenticator_data(self):
+        with self.assertRaisesRegex(
+            InvalidAuthenticationResponse,
+            "authenticatorData was malformed. See __cause__ for more info",
+        ) as raised:
+            # authenticatorData below is intentionally truncated to be bad data
+            verify_authentication_response(
+                credential="""{
+                "id": "EDx9FfAbp4obx6oll2oC4-CZuDidRVV4gZhxC529ytlnqHyqCStDUwfNdm1SNHAe3X5KvueWQdAX3x9R1a2b9Q",
+                "rawId": "EDx9FfAbp4obx6oll2oC4-CZuDidRVV4gZhxC529ytlnqHyqCStDUwfNdm1SNHAe3X5KvueWQdAX3x9R1a2b9Q",
+                "response": {
+                    "authenticatorData": "SZYN5YgOjGh0NBcPZHZg",
+                    "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJ4aTMwR1BHQUZZUnhWRHBZMXNNMTBEYUx6VlFHNjZudi1fN1JVYXpIMHZJMll2RzhMWWdERW52TjVmWlpOVnV2RUR1TWk5dGUzVkxxYjQyTjBma0xHQSIsImNsaWVudEV4dGVuc2lvbnMiOnt9LCJoYXNoQWxnb3JpdGhtIjoiU0hBLTI1NiIsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMCIsInR5cGUiOiJ3ZWJhdXRobi5nZXQifQ",
+                    "signature": "MEUCIGisVZOBapCWbnJJvjelIzwpixxIwkjCCb5aCHafQu68AiEA88v-2pJNNApPFwAKFiNuf82-2hBxYW5kGwVweeoxCwo"
+                },
+                "type": "public-key",
+                "clientExtensionResults": {}
+            }""",
+                expected_challenge=base64url_to_bytes(
+                    "xi30GPGAFYRxVDpY1sM10DaLzVQG66nv-_7RUazH0vI2YvG8LYgDEnvN5fZZNVuvEDuMi9te3VLqb42N0fkLGA"
+                ),
+                expected_rp_id="localhost",
+                expected_origin="http://localhost:5000",
+                credential_public_key=base64url_to_bytes(
+                    "pQECAyYgASFYIIeDTe-gN8A-zQclHoRnGFWN8ehM1b7yAsa8I8KIvmplIlgg4nFGT5px8o6gpPZZhO01wdy9crDSA_Ngtkx0vGpvPHI"
+                ),
+                credential_current_sign_count=77,
+            )
+
+        self.assertIsInstance(raised.exception.__cause__, InvalidAuthenticatorDataStructure)
+
+    def test_raises_on_bad_client_data_json(self):
+        with self.assertRaisesRegex(
+            InvalidAuthenticationResponse,
+            "clientDataJSON was malformed. See __cause__ for more info",
+        ) as raised:
+            # clientDataJSON below is intentionally truncated to be bad data
+            verify_authentication_response(
+                credential="""{
+                "id": "EDx9FfAbp4obx6oll2oC4-CZuDidRVV4gZhxC529ytlnqHyqCStDUwfNdm1SNHAe3X5KvueWQdAX3x9R1a2b9Q",
+                "rawId": "EDx9FfAbp4obx6oll2oC4-CZuDidRVV4gZhxC529ytlnqHyqCStDUwfNdm1SNHAe3X5KvueWQdAX3x9R1a2b9Q",
+                "response": {
+                    "authenticatorData": "SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MBAAAATg",
+                    "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJ4aTMwR1BH",
+                    "signature": "MEUCIGisVZOBapCWbnJJvjelIzwpixxIwkjCCb5aCHafQu68AiEA88v-2pJNNApPFwAKFiNuf82-2hBxYW5kGwVweeoxCwo"
+                },
+                "type": "public-key",
+                "clientExtensionResults": {}
+            }""",
+                expected_challenge=base64url_to_bytes(
+                    "xi30GPGAFYRxVDpY1sM10DaLzVQG66nv-_7RUazH0vI2YvG8LYgDEnvN5fZZNVuvEDuMi9te3VLqb42N0fkLGA"
+                ),
+                expected_rp_id="localhost",
+                expected_origin="http://localhost:5000",
+                credential_public_key=base64url_to_bytes(
+                    "pQECAyYgASFYIIeDTe-gN8A-zQclHoRnGFWN8ehM1b7yAsa8I8KIvmplIlgg4nFGT5px8o6gpPZZhO01wdy9crDSA_Ngtkx0vGpvPHI"
+                ),
+                credential_current_sign_count=77,
+            )
+
+        self.assertIsInstance(raised.exception.__cause__, InvalidJSONStructure)

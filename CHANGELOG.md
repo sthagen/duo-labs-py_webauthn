@@ -1,5 +1,17 @@
 # Changelog
 
+### v2.8.0
+
+**Changes:**
+
+- `"android-key"` attestation verification is more tolerant of X.509 leaf certificates with values that violate ASN.1 DER parsing rules ([#277](https://github.com/duo-labs/py_webauthn/pull/277))
+- Dependencies have been updated, including `cbor2>=5.6.5,<6.0.0` ([#269](https://github.com/duo-labs/py_webauthn/pull/269), h/t @typestring; [#272](https://github.com/duo-labs/py_webauthn/pull/272)), and `cryptography>=46.0.0` and `pyOpenSSL>=26.0.0` ([#278](https://github.com/duo-labs/py_webauthn/pull/278))
+- Two expired trust anchors have been retired ([#279](https://github.com/duo-labs/py_webauthn/pull/279))
+- A new trust anchor for `"android-key"` attestation has been added ([#268](https://github.com/duo-labs/py_webauthn/pull/268))
+- TPM manufacturer IDs are now normalized during `"tpm"` attestation verification to prevent casing-related lookup issues ([#275](https://github.com/duo-labs/py_webauthn/pull/275))
+- Registration verification will more consistently raise `webauthn.helpers.exceptions.InvalidRegistrationResponse` when encountering bad data. Likewise, authentication verification will more consistently raise `webauthn.helpers.exceptions.InvalidAuthenticationResponse` when encountering bad data ([#271](https://github.com/duo-labs/py_webauthn/pull/271), [#273](https://github.com/duo-labs/py_webauthn/pull/273), [#276](https://github.com/duo-labs/py_webauthn/pull/276), [#280](https://github.com/duo-labs/py_webauthn/pull/280))
+- A docstring typo in `verify_authentication_response()` has been fixed ([#266](https://github.com/duo-labs/py_webauthn/pull/266), h/t @Densaugeo)
+
 ## v2.7.1
 
 **Changes:**

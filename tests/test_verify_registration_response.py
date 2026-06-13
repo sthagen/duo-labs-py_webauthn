@@ -15,7 +15,7 @@ from webauthn.helpers.exceptions import (
     InvalidRegistrationResponse,
     InvalidJSONStructure,
 )
-from webauthn.helpers.known_root_certs import globalsign_r2
+from webauthn.helpers.known_root_certs import globalsign_root_ca
 from webauthn.helpers.structs import (
     AttestationFormat,
     PublicKeyCredentialType,
@@ -216,7 +216,7 @@ class TestVerifyRegistrationResponse(TestCase):
                 expected_rp_id=rp_id,
                 pem_root_certs_bytes_by_fmt={
                     # This root cert is actually for android-safetynet
-                    AttestationFormat.PACKED: [globalsign_r2]
+                    AttestationFormat.PACKED: [globalsign_root_ca]
                 },
             )
 
@@ -388,3 +388,63 @@ class TestVerifyRegistrationResponse(TestCase):
             "clientDataJSON was malformed. See __cause__ for more info",
         )
         self.assertIsInstance(exc.exception.__cause__, InvalidJSONStructure)
+
+    def test_raises_on_bad_attestationObject(self) -> None:
+        with self.assertRaisesRegex(
+            InvalidRegistrationResponse,
+            "attestationObject was malformed. See __cause__ for more info",
+        ) as raised:
+            # attestationObject below is intentionally truncated to be bad data
+            verify_registration_response(
+                credential="""{
+                "id": "9y1xA8Tmg1FEmT-c7_fvWZ_uoTuoih3OvR45_oAK-cwHWhAbXrl2q62iLVTjiyEZ7O7n-CROOY494k7Q3xrs_w",
+                "rawId": "9y1xA8Tmg1FEmT-c7_fvWZ_uoTuoih3OvR45_oAK-cwHWhAbXrl2q62iLVTjiyEZ7O7n-CROOY494k7Q3xrs_w",
+                "response": {
+                    "attestationObject": "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YVjESZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2NFAAAAFwAAAAAAAAAAAAAAAAAAAAAAQPctcQPE5oNRRJk_nO_371mf7qE7qIodzr0eOf6ACvnMB1oQG165dqutoi1U44shGezu5_gkTjmOPeJO0N8a7P",
+                    "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiVHdON240V1R5R0tMYzRaWS1xR3NGcUtuSE00bmdscXN5VjBJQ0psTjJUTzlYaVJ5RnRya2FEd1V2c3FsLWdrTEpYUDZmbkYxTWxyWjUzTW00UjdDdnciLCJvcmlnaW4iOiJodHRwOi8vbG9jYWxob3N0OjUwMDAiLCJjcm9zc09yaWdpbiI6ZmFsc2V9"
+                },
+                "type": "public-key",
+                "clientExtensionResults": {},
+                "transports": [
+                    "nfc",
+                    "usb"
+                ]
+            }""",
+                expected_challenge=base64url_to_bytes(
+                    "TwN7n4WTyGKLc4ZY-qGsFqKnHM4nglqsyV0ICJlN2TO9XiRyFtrkaDwUvsql-gkLJXP6fnF1MlrZ53Mm4R7Cvw"
+                ),
+                expected_origin="http://localhost:5000",
+                expected_rp_id="localhost",
+            )
+
+        self.assertIsInstance(raised.exception.__cause__, InvalidAttestationObjectStructure)
+
+    def test_raises_on_bad_client_data_json(self) -> None:
+        with self.assertRaisesRegex(
+            InvalidRegistrationResponse,
+            "clientDataJSON was malformed. See __cause__ for more info",
+        ) as raised:
+            # clientDataJSON below is intentionally truncated to be bad data
+            verify_registration_response(
+                credential="""{
+                "id": "9y1xA8Tmg1FEmT-c7_fvWZ_uoTuoih3OvR45_oAK-cwHWhAbXrl2q62iLVTjiyEZ7O7n-CROOY494k7Q3xrs_w",
+                "rawId": "9y1xA8Tmg1FEmT-c7_fvWZ_uoTuoih3OvR45_oAK-cwHWhAbXrl2q62iLVTjiyEZ7O7n-CROOY494k7Q3xrs_w",
+                "response": {
+                    "attestationObject": "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YVjESZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2NFAAAAFwAAAAAAAAAAAAAAAAAAAAAAQPctcQPE5oNRRJk_nO_371mf7qE7qIodzr0eOf6ACvnMB1oQG165dqutoi1U44shGezu5_gkTjmOPeJO0N8a7P-lAQIDJiABIVggSFbUJF-42Ug3pdM8rDRFu_N5oiVEysPDB6n66r_7dZAiWCDUVnB39FlGypL-qAoIO9xWHtJygo2jfDmHl-_eKFRLDA",
+                    "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRl"
+                },
+                "type": "public-key",
+                "clientExtensionResults": {},
+                "transports": [
+                    "nfc",
+                    "usb"
+                ]
+            }""",
+                expected_challenge=base64url_to_bytes(
+                    "TwN7n4WTyGKLc4ZY-qGsFqKnHM4nglqsyV0ICJlN2TO9XiRyFtrkaDwUvsql-gkLJXP6fnF1MlrZ53Mm4R7Cvw"
+                ),
+                expected_origin="http://localhost:5000",
+                expected_rp_id="localhost",
+            )
+
+        self.assertIsInstance(raised.exception.__cause__, InvalidJSONStructure)

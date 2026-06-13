@@ -61,8 +61,6 @@ class TestVerifyRegistrationResponseAndroidKey(TestCase):
             "AYNe4CBKc8H30FuAb8uaht6JbEQfbSBnS0SX7B6MFg8ofI92oR5lheRDJCgwY-JqB_QSJtezdhMbf8Wzt_La5N0"
         )
 
-
-class TestVerifyRegistrationResponseAndroidKeyUsingNewRootCert(TestCase):
     @patch_validate_certificate_chain_x509store_getter
     def test_verify_attestation_android_key_root_5(
         self,

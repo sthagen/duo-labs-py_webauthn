@@ -1,16 +1,18 @@
 import hashlib
-from typing import List
+from typing import List, cast
 
 from pyasn1.type.univ import OctetString
-from pyasn1.codec.der.decoder import decode as der_decode
-from cryptography import x509
+from pyasn1.codec.ber.decoder import decode as ber_decode
+from pyasn1_modules.rfc5280 import Certificate
+
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
-from cryptography.x509 import (
-    Extension,
-    ExtensionNotFound,
-    ObjectIdentifier,
-    UnrecognizedExtension,
+from OpenSSL.crypto import (
+    _PublicKey,
+    load_certificate,
+    dump_certificate,
+    FILETYPE_PEM,
+    FILETYPE_ASN1,
 )
 
 from webauthn.helpers import (
@@ -31,7 +33,6 @@ from webauthn.helpers.exceptions import (
     InvalidRegistrationResponse,
 )
 from webauthn.helpers.known_root_certs import (
-    google_hardware_attestation_root_1,
     google_hardware_attestation_root_2,
     google_hardware_attestation_root_3,
     google_hardware_attestation_root_4,
@@ -72,8 +73,8 @@ def verify_android_key(
     x5c_root_cert = attestation_statement.x5c[-1]
 
     try:
-        x5c_root_cert_x509 = x509.load_der_x509_certificate(x5c_root_cert)
-        x5c_root_cert_pem = x5c_root_cert_x509.public_bytes(Encoding.PEM)
+        x5c_root_cert_openssl = load_certificate(FILETYPE_ASN1, x5c_root_cert)
+        x5c_root_cert_pem = dump_certificate(FILETYPE_PEM, x5c_root_cert_openssl)
     except Exception as exc:
         raise InvalidRegistrationResponse(
             "Could not parse x5c root certificate. See __cause__ for more info (Android Key)"
@@ -88,8 +89,7 @@ def verify_android_key(
     except InvalidCertificateChain as err:
         raise InvalidRegistrationResponse(f"{err} (Android Key)")
 
-    # Make sure the root cert is one of these
-    pem_root_certs_bytes.append(google_hardware_attestation_root_1)
+    # Make sure the root cert is one of these:
     pem_root_certs_bytes.append(google_hardware_attestation_root_2)
     pem_root_certs_bytes.append(google_hardware_attestation_root_3)
     pem_root_certs_bytes.append(google_hardware_attestation_root_4)
@@ -121,8 +121,11 @@ def verify_android_key(
     # algorithm specified in alg.
     try:
         attestation_cert_bytes = attestation_statement.x5c[0]
-        attestation_cert = x509.load_der_x509_certificate(attestation_cert_bytes)
-        attestation_cert_pub_key = attestation_cert.public_key()
+        attestation_cert = load_certificate(FILETYPE_ASN1, attestation_cert_bytes)
+        attestation_cert_pub_key = attestation_cert.get_pubkey().to_cryptography_key()
+        # to_cryptography_key() is of type _Key which includes _PrivateKey types as well. But we
+        # know this is the _PublicKey subset of _Key so help type checking understand that
+        attestation_cert_pub_key = cast(_PublicKey, attestation_cert_pub_key)
     except Exception as exc:
         raise InvalidRegistrationResponse(
             "Could not parse attestation certificate public key. See __cause__ for more info (Android Key)"
@@ -160,24 +163,36 @@ def verify_android_key(
             "Certificate public key did not match credential public key (Android Key)"
         )
 
+    attestation_cert_pyasn1, _ = ber_decode(attestation_cert_bytes, asn1Spec=Certificate())
+    attestation_cert_exts = attestation_cert_pyasn1["tbsCertificate"]["extensions"]
+
     # Verify that the attestationChallenge field in the attestation certificate
     # extension data is identical to clientDataHash.
     ext_key_description_oid = "1.3.6.1.4.1.11129.2.1.17"
+    ext_key_description = None
     try:
-        cert_extensions = attestation_cert.extensions
-        ext_key_description: Extension = cert_extensions.get_extension_for_oid(
-            ObjectIdentifier(ext_key_description_oid)
-        )
-    except ExtensionNotFound:
+        # OIDs are best compared as tuples, but OIDs read easier as strings, so bridge that here
+        _ext_id = tuple(int(comp) for comp in ext_key_description_oid.split("."))
+
+        # Go through each extension and try to find one with a matching OID
+        for idx in range(0, len(attestation_cert_exts)):
+            extension = attestation_cert_exts.getComponentByPosition(idx)
+            if extension["extnID"]._value == _ext_id:
+                ext_key_description = extension
+                break
+    except Exception as exc:
+        raise InvalidRegistrationResponse(
+            "Certificate extensions could not be parsed. See __cause__ for more info (Android Key)"
+        ) from exc
+
+    if not ext_key_description:
         raise InvalidRegistrationResponse(
             f"Certificate missing extension {ext_key_description_oid} (Android Key)"
         )
 
-    # Peel apart the Extension into an UnrecognizedExtension, then the bytes we actually
-    # want
-    ext_value_wrapper: UnrecognizedExtension = ext_key_description.value
-    ext_value: bytes = ext_value_wrapper.value
-    parsed_ext, trailing_garbage = der_decode(ext_value, asn1Spec=KeyDescription())
+    # Parse the KeyDescription extension value
+    ext_value: OctetString = ext_key_description["extnValue"]
+    parsed_ext, trailing_garbage = ber_decode(ext_value, asn1Spec=KeyDescription())
     if trailing_garbage:
         raise InvalidRegistrationResponse(
             f"Extension {ext_key_description_oid} (Android key) has trailing garbage"

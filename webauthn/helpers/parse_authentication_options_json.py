@@ -13,7 +13,7 @@ from .structs import (
 
 
 def parse_authentication_options_json(
-    json_val: Union[str, Dict[str, Any]]
+    json_val: Union[str, Dict[str, Any]],
 ) -> PublicKeyCredentialRequestOptions:
     """
     Parse a JSON form of authentication options, as either stringified JSON or a plain dict, into an
@@ -63,7 +63,9 @@ def parse_authentication_options_json(
     try:
         mapped_user_verification = UserVerificationRequirement(options_user_verification)
     except ValueError as exc:
-        raise InvalidJSONStructure("Options userVerification was invalid value") from exc
+        raise InvalidJSONStructure(
+            "Options userVerification was invalid value. See __cause__ for more info"
+        ) from exc
 
     """
     Check allowCredentials
@@ -91,7 +93,7 @@ def parse_authentication_options_json(
                     ]
                 except ValueError as exc:
                     raise InvalidJSONStructure(
-                        "Options excludeCredentials entry transports had invalid value"
+                        "Options excludeCredentials entry transports had invalid value. See __cause__ for more info"
                     ) from exc
 
             mapped_allow_credentials.append(_mapped)
@@ -106,7 +108,7 @@ def parse_authentication_options_json(
         )
     except Exception as exc:
         raise InvalidAuthenticationOptions(
-            "Could not parse authentication options from JSON data"
+            "Could not parse authentication options from JSON data. See __cause__ for more info"
         ) from exc
 
     return authentication_options

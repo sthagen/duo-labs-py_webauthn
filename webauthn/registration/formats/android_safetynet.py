@@ -20,7 +20,7 @@ from webauthn.helpers.exceptions import (
     InvalidCertificateChain,
     InvalidRegistrationResponse,
 )
-from webauthn.helpers.known_root_certs import globalsign_r2, globalsign_root_ca
+from webauthn.helpers.known_root_certs import globalsign_root_ca
 from webauthn.helpers.structs import AttestationStatement
 
 
@@ -162,7 +162,6 @@ def verify_android_safetynet(
     try:
         # Include known root certificates for this attestation format with whatever
         # other certs were provided
-        pem_root_certs_bytes.append(globalsign_r2)
         pem_root_certs_bytes.append(globalsign_root_ca)
 
         validate_certificate_chain(

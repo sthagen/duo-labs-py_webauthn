@@ -97,7 +97,12 @@ def verify_authentication_response(
     authenticator_data_bytes = byteslike_to_bytes(response.authenticator_data)
     signature_bytes = byteslike_to_bytes(response.signature)
 
-    client_data = parse_client_data_json(client_data_bytes)
+    try:
+        client_data = parse_client_data_json(client_data_bytes)
+    except Exception as exc:
+        raise InvalidAuthenticationResponse(
+            "clientDataJSON was malformed. See __cause__ for more info"
+        ) from exc
 
     if client_data.type != ClientDataType.WEBAUTHN_GET:
         raise InvalidAuthenticationResponse(
@@ -127,7 +132,12 @@ def verify_authentication_response(
                 f'Unexpected token_binding status of "{status}", expected one of "{",".join(expected_token_binding_statuses)}"'
             )
 
-    auth_data = parse_authenticator_data(authenticator_data_bytes)
+    try:
+        auth_data = parse_authenticator_data(authenticator_data_bytes)
+    except Exception as exc:
+        raise InvalidAuthenticationResponse(
+            "authenticatorData was malformed. See __cause__ for more info"
+        ) from exc
 
     # Generate a hash of the expected RP ID for comparison
     expected_rp_id_hash = hashlib.sha256()

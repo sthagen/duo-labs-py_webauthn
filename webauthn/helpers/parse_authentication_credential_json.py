@@ -13,7 +13,7 @@ from .structs import (
 
 
 def parse_authentication_credential_json(
-    json_val: Union[str, Dict[str, Any]]
+    json_val: Union[str, Dict[str, Any]],
 ) -> AuthenticationCredential:
     """
     Parse a JSON form of an authentication credential, as either a stringified JSON object or a
@@ -96,7 +96,7 @@ def parse_authentication_credential_json(
         )
     except Exception as exc:
         raise InvalidAuthenticationResponse(
-            "Could not parse authentication credential from JSON data"
+            "Could not parse authentication credential from JSON data. See __cause__ for more info"
         ) from exc
 
     return authentication_credential

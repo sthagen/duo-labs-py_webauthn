@@ -17,6 +17,6 @@ def parse_cbor(data: bytes) -> Any:
         data = byteslike_to_bytes(data)
         to_return = cbor2.loads(data)
     except Exception as exc:
-        raise InvalidCBORData("Could not decode CBOR data") from exc
+        raise InvalidCBORData("Could not decode CBOR data. See __cause__ for more info") from exc
 
     return to_return

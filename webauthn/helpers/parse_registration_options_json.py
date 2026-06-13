@@ -23,7 +23,7 @@ from .base64url_to_bytes import base64url_to_bytes
 
 
 def parse_registration_options_json(
-    json_val: Union[str, Dict[str, Any]]
+    json_val: Union[str, Dict[str, Any]],
 ) -> PublicKeyCredentialCreationOptions:
     """
     Parse a JSON form of registration options, as either stringified JSON or a plain dict, into an
@@ -84,7 +84,9 @@ def parse_registration_options_json(
     try:
         mapped_attestation = AttestationConveyancePreference(options_attestation)
     except ValueError as exc:
-        raise InvalidJSONStructure("Options attestation was invalid value") from exc
+        raise InvalidJSONStructure(
+            "Options attestation was invalid value. See __cause__ for more info"
+        ) from exc
 
     """
     Check authenticatorSelection
@@ -99,7 +101,7 @@ def parse_registration_options_json(
                 mapped_attachment = AuthenticatorAttachment(options_authr_selection_attachment)
             except ValueError as exc:
                 raise InvalidJSONStructure(
-                    "Options authenticatorSelection attachment was invalid value"
+                    "Options authenticatorSelection attachment was invalid value. See __cause__ for more info"
                 ) from exc
 
         options_authr_selection_rkey = options_authr_selection.get("residentKey")
@@ -109,7 +111,7 @@ def parse_registration_options_json(
                 mapped_rkey = ResidentKeyRequirement(options_authr_selection_rkey)
             except ValueError as exc:
                 raise InvalidJSONStructure(
-                    "Options authenticatorSelection residentKey was invalid value"
+                    "Options authenticatorSelection residentKey was invalid value. See __cause__ for more info"
                 ) from exc
 
         options_authr_selection_require_rkey = options_authr_selection.get("requireResidentKey")
@@ -129,7 +131,7 @@ def parse_registration_options_json(
                 mapped_user_verification = UserVerificationRequirement(options_authr_selection_uv)
             except ValueError as exc:
                 raise InvalidJSONStructure(
-                    "Options authenticatorSelection userVerification was invalid value"
+                    "Options authenticatorSelection userVerification was invalid value. See __cause__ for more info"
                 ) from exc
 
         mapped_authenticator_selection = AuthenticatorSelectionCriteria(
@@ -161,7 +163,9 @@ def parse_registration_options_json(
             for param in options_pub_key_cred_params
         ]
     except ValueError as exc:
-        raise InvalidJSONStructure("Options pubKeyCredParams entry had invalid alg") from exc
+        raise InvalidJSONStructure(
+            "Options pubKeyCredParams entry had invalid alg. See __cause__ for more info"
+        ) from exc
 
     """
     Check excludeCredentials
@@ -189,7 +193,7 @@ def parse_registration_options_json(
                     ]
                 except ValueError as exc:
                     raise InvalidJSONStructure(
-                        "Options excludeCredentials entry transports had invalid value"
+                        "Options excludeCredentials entry transports had invalid value. See __cause__ for more info"
                     ) from exc
 
             mapped_exclude_credentials.append(_mapped)
@@ -214,7 +218,9 @@ def parse_registration_options_json(
         try:
             mapped_hints = [PublicKeyCredentialHint(hint) for hint in options_hints]
         except ValueError as exc:
-            raise InvalidJSONStructure("Options hints had invalid value") from exc
+            raise InvalidJSONStructure(
+                "Options hints had invalid value. See __cause__ for more info"
+            ) from exc
 
     try:
         registration_options = PublicKeyCredentialCreationOptions(
@@ -237,7 +243,7 @@ def parse_registration_options_json(
         )
     except Exception as exc:
         raise InvalidRegistrationOptions(
-            "Could not parse registration options from JSON data"
+            "Could not parse registration options from JSON data. See __cause__ for more info"
         ) from exc
 
     return registration_options

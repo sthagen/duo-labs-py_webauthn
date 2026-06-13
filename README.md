@@ -52,7 +52,7 @@ You can also run these examples with the following:
 
 ```sh
 # See "Development" below for venv setup instructions
-venv $> python -m examples.registration
+venv $> uv run -m examples.registration
 ```
 
 ### Authentication
@@ -63,19 +63,22 @@ You can also run these examples with the following:
 
 ```sh
 # See "Development" below for venv setup instructions
-venv $> python -m examples.authentication
+venv $> uv run -m examples.authentication
 ```
 
 ## Development
 
 ### Installation
 
-Set up a virtual environment, and then install the project's requirements:
+Install uv by following the installation instructions here:
+
+https://docs.astral.sh/uv/getting-started/installation/
+
+Afterwards, run the following command to set up a virtual environment and install the project's
+dependencies:
 
 ```sh
-$> python3 -m venv venv
-$> source venv/bin/activate
-venv $> pip install -r requirements.txt
+$> uv sync
 ```
 
 ### Testing
@@ -83,19 +86,19 @@ venv $> pip install -r requirements.txt
 Python's unittest module can be used to execute everything in the **tests/** directory:
 
 ```sh
-venv $> python -m unittest
+venv $> uv run -m unittest
 ```
 
 Auto-watching unittests can be achieved with a tool like nodemon.
 
 **All tests:**
 ```sh
-venv $> nodemon --exec "python -m unittest" --ext py
+venv $> nodemon --exec "uv run -m unittest" --ext py
 ```
 
 **An individual test file:**
 ```sh
-venv $> nodemon --exec "python -m unittest tests/test_aaguid_to_string.py" --ext py
+venv $> nodemon --exec "uv run -m unittest tests/test_aaguid_to_string.py" --ext py
 ```
 
 ### Linting and Formatting
@@ -103,14 +106,14 @@ venv $> nodemon --exec "python -m unittest tests/test_aaguid_to_string.py" --ext
 Linting is handled via `mypy`:
 
 ```sh
-venv $> python -m mypy webauthn
+venv $> uv run -m mypy webauthn
 Success: no issues found in 52 source files
 ```
 
 The entire library is formatted using `black`:
 
 ```sh
-venv $> python -m black webauthn --line-length=99
+venv $> uv run -m black webauthn --line-length=99
 All done! ✨ 🍰 ✨
 52 files left unchanged.
 ```

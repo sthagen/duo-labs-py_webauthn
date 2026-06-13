@@ -2,11 +2,13 @@ from unittest import TestCase
 from unittest.mock import patch
 from datetime import datetime
 from OpenSSL.crypto import X509, X509Store, X509StoreContextError
+from base64 import urlsafe_b64decode
 
 from webauthn.helpers.exceptions import InvalidCertificateChain
 from webauthn.helpers.known_root_certs import (
     apple_webauthn_root_ca,
     globalsign_root_ca,
+    google_hardware_attestation_root_4,
 )
 from webauthn.helpers.validate_certificate_chain import (
     validate_certificate_chain,
@@ -96,3 +98,30 @@ class TestValidateCertificateChain(TestCase):
 
             cause = ctx.exception.__cause__
             self.assertEqual(cause, custom_exception)
+
+    @patch_validate_certificate_chain_x509store_getter
+    def test_handles_cert_with_der_violation(self, patched_x509store: X509Store):
+        """
+        Some X.509 certificate extension(s) explicitly encode Extension.critical as FALSE, in
+        violation of ASN.1 DER. This test demonstrates the ability to still handle such certificates
+        by using more lenient BER instead.
+        """
+        x5c = [
+            # x5c[0] is the one that breaks when trying to parse its ASN.1 structure using DER
+            "MIID9jCCAmCgAwIBAgIBATALBgkqhkiG9w0BAQswOTEMMAoGA1UEDAwDVEVFMSkwJwYDVQQFEyA4YmM3NDljNzljZTI2M2JhZWU4Mzk4MGUzYWMzYjA5ODAeFw03MDAxMDEwMDAwMDBaFw00MDEyMzExNTU5NTlaMB8xHTAbBgNVBAMMFEFuZHJvaWQgS2V5c3RvcmUgS2V5MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEXEG0W2FVdhLgKOiZIALhInYRztj3WfUScPEUURuNbpkpXPjJ7+cUDb+vb3hLXOZ/9oGmDanb071tFB6qHEFGPaOCAXAwggFsMA4GA1UdDwEB/wQEAwIAgDCCAVgGCisGAQQB1nkCAREBAQAEggFFMIIBQQIBAwoBAQIBKQoBAQQg5PdENrEy/qA83J1g9S/sNRgWk2jEP7XcxTeL1OnbicQEADB3v4U9CAIGAZ6zlWkwv4VFZwRlMGMxPTAbBBZjb20uZ29vZ2xlLmFuZHJvaWQuZ3NmAgEiMB4EFmNvbS5nb29nbGUuYW5kcm9pZC5nbXMCBA+eRrUxIgQg8P1sW0EPJcslw7UzRsiXL64w+O50Ed+RBICtay1g24MwgZWhBTEDAgECogMCAQOjBAICAQClBTEDAgEEqgMCAQG/g3gDAgEDv4N5AwIBCr+FPgMCAQC/hUBMMEoEIKYU4CcUa00TICoOSLUeRawNqsWxi4oQz4Mh4hCAk4z+AQH/CgEABCAtDIeecTRGo7jpxGHABTqkluIgRVVZIcDf5RXV9rnym7+FQQUCAwIi4L+FQgUCAwMXazALBgkqhkiG9w0BAQsDggGBABBp2lD6ayRxjJdroWD6qrvNEQvDWsVONCiXolivI5W3U1oPf1DRVk4a8eupBSbqg6u45SHKnE5MjbMEysR+zJsvZqZx6/a860FJqEc8PvgrQny5UmGUIuq7mNP+N3fsVI8hS2rzXc0DtQLDLCom5j1GEMUPimI+gWJXyAy5d5y8pmutX7AYk45a44o8zlWNWjEzyo80SxET1XQz0kPCAgw5SB/nRZ05nmY7KYAaWf5TRXda8iLmRNcSw+W7AFzl8s3DKrRk5wIvNNAu0ixg6fcTGoj7lDfYpqKdQ2UDmO6A50acRvTvLTopRPGOl4ZcgyDi1AU9F+sI9YGqoWmNw7KxSdaKvnuKT71MJUpWS0iG9dq+z1QrFBaRq5CXXRmdOr4IbI0t0oHU3v/hfmvsL5kxE/p8Zi8id0L9PqQCWAFTNNLpsPV31Z6MSPHX2uqjSxWJ5TbsaY/AytS18dsPEhc9HDy4Zkac4UE3efs3DGRn/9gJQaTOJIZQu6NJ0ALjiQ==",
+            # x5c[1] and x5c[2] _can_ be parsed using DER but of course parse using BER too
+            "MIIE4DCCAsigAwIBAgIRAPdtNvcn/D5jQYOj+8nSwWMwDQYJKoZIhvcNAQELBQAwOTEMMAoGA1UEDAwDVEVFMSkwJwYDVQQFEyBhZDk0OGRhZWMzYTZkM2NlMWRmNDAyNTdmNWNhNDNkNDAeFw0yNDExMjIyMDQ3MDhaFw0zNDExMjAyMDQ3MDhaMDkxDDAKBgNVBAwMA1RFRTEpMCcGA1UEBRMgOGJjNzQ5Yzc5Y2UyNjNiYWVlODM5ODBlM2FjM2IwOTgwggGiMA0GCSqGSIb3DQEBAQUAA4IBjwAwggGKAoIBgQDGt2jGysC+EmlVLxkkoY6g012Z4H0D100BzPkO3+p+U/EGCE10DuTn0MQiSOSgl0SNLHn3sa5ldAPh49yw7sTh75AEOdc//JU//A7ijP9+bslqhs1BCqzS4L2mS0uCFTZC8D/WJY5CMftzFeNIFWY01nvrcEVZqR6qQJ9irecpNbiiGh/BIcBHlUqGbxU1jPETSRueYs0hMqyTA3m9wAd1c6p4iqncENLFASwBl+kgvz4ZgwWyS15/wMge0Qa/OkRa2HTIHJBHdthbzfb+/3dL33Rv1weK/ccuNAanexrN6An5TpxawZtyN3uXVmxTjT8qENOGmzgzHqH2MyoqrC3HtwJJqKHuJTf2i76cizZdp4fdYdQZ3w0BUFQMILM+uU8O2aSBQUzUR+nWfrWQdfurezTGAezRTFicLIpdRn62eLNHl3jGOx5Ftb2qaTINLPwG28Afacy7PPzk4rR28R7hULMriu3kD1JYRHPU+KOpBqN7fxTB43uKaLT9AU/0l8sCAwEAAaNjMGEwHQYDVR0OBBYEFEK29BWXf6l2d9PS/tniPRqF2zd9MB8GA1UdIwQYMBaAFBkZee073GIwZTYNfb+rJgBxSw6MMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgIEMA0GCSqGSIb3DQEBCwUAA4ICAQBJ3iTsPNRgh4sWAB1P4RzLp7mAfRclBWAWmlXRedAEUx3YC0mS+yJgQEwnOxYXL6jtgJzsjmBSBOCxatYHWBSbuUUeHbSCCpfvuWzA4qQWSejbZ0xCRznUCfXbBAfMdV8nDtv2kNTvuDgae/v6Z7mb51riAKh7ibo3Jb38MLongiPfV1PQrJfCujHRuWuvQrli9E9A78xitMGOoIyhYmFN8zSW7q5/IkAXqYmmsRWn5Ya1enZFOY7EOg2tUYW8l+0tGC02ogl8dH7sOnDCsAjZQ6T8bakQw9FM754K9SUv35VH11xU0eE+0SpAL/fSTdof1NU4q3oGkoLYMReo1yTI7DxSxzbwvX0v44W3LmC77M5OsgEurEp9lKvkTIjjqEX20oUxSGxgC7LplKOl/601QQOpZzdKtmEiMwlC5odUiCzIXSI/UqJJ/10Af4BvzHRIPEPj6ubnTbv3zbZ6wUmB52XbVm1S75USgEPpadPgGI9avFppnMTk5cCsupIqeykBff+GbuhlHtSOefVcujIjiBK4tuwxyvU+Uycig5VMZavHqgaDkWo2xaX/otzITHS0suGtdxFZNj2d3gyg/9pBfHCYHJVKnIsG3rWkIKB4v2GcDHqpme4Bg6dAQYPu1v02m6f2ekC8yf79BdfgcAk2mNGSdCZ0hqYirodf+l7rKA==",
+            "MIIFQTCCAymgAwIBAgIQVN/nzZLP3G7RMACiXiZJfjANBgkqhkiG9w0BAQsFADAbMRkwFwYDVQQFExBmOTIwMDllODUzYjZiMDQ1MB4XDTI0MTEyMjIwNDUyOVoXDTM0MTEyMDIwNDUyOVowOTEMMAoGA1UEDAwDVEVFMSkwJwYDVQQFEyBhZDk0OGRhZWMzYTZkM2NlMWRmNDAyNTdmNWNhNDNkNDCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBALZFEx4xEbKLmI7drE65sbWSigI3WQ+P/CzHORYnm7NFK2tlkNifbcUEvPUL2WsbEaEk9amlzTWrSdw/ehCE/6if1l644dM1soA5XPL8ImcHyMv3m5scPbNPdYu//ERd2kLGwZlFmWP+5qMwwFe5swpG4bgi4G0gA8z32lhfjLklakg8occ+Z0N591ZbMPeC2BRpxPL2lkXULY6lyyXowKx6i03NyFSiVeX5wsS8MM4Kn3za44EkwJICXnakPJKj6UEfVRrKJkDFLrFkIXtGXCP40e55TXxlxaiv9kvzGRqwRAumAlLK6MElrwPODNL5sDCrt0+kTMy3NUuQ/K5ViFAy9b198LB7ILzwizYYsc6XY1UfCyqWG4BSqMlhYHN9b4Od856IqtQc99l8omYOph7HEFlkZDkZ3+pIpNQcaRjS6AKuZ1UP+F5vygayUmchj7e3d3MH2Lo79SFRrUWzhuJt9OOCBLZesYhyRmT6rX9yeCuqH//mUIUUol9waGz6tig6tq/lHPBTbemaRJobiX2xtl1078Niam3hq6S8mwUHOu2GXd1gKcyPoWQ87uHn3IGTOrq8VHYOhgweAh8b/K0vpvFbXyT+bN6I5Lo0k0/Ee5FLTDRgsIpoZ/DEZce52G1TmhSR4Vdbt/vFSCjUXF0yXu2SHPKvKfNVChJGoH5rAgMBAAGjYzBhMB0GA1UdDgQWBBQZGXntO9xiMGU2DX2/qyYAcUsOjDAfBgNVHSMEGDAWgBQ2YeEAfIgFCVGLRGxH/xpMyepPEjAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwICBDANBgkqhkiG9w0BAQsFAAOCAgEAI4j+2EZ5X7FtjO2OE6N9Yss22gxCeXEjl4mTrC5XYtZ2a4k3QEh6FtAOyHNvJBahMrXufQhSG3xFbRvOYOC02lyPbENosY5M8UBA/+zwCnqiHQbEWVyM4vzFlcRv/Z9198z6syYGhzdflSXct6KJdjUFTlibvaeWTPKGzAC0wMm5ieEiil7vF6nU0kILKLwLhI9TLH15I5x9S3ZbbFiZbtW2E7Mckqtzf4Bj798ICobHeB68a6KY+ROv4WXfTCMDlMxwLiQ4nmhfCNz+Qbz8CIGLEdu8BmdahhHFOwMkAUcfxN4+479N2fnXUxAM4C8wkk+6vee2HMpedqTZF33GWixZWgyLRISlLi+9GR47BSS9FmqGajgvpSfvT+nytbn7sptIEBRPbAAajhSGz1STUVD17RcG5qHbq8ZAa5ieWuU9r+VEzg2d/MMpXY4b63gActbFvc17lnzL1ROJIgCImv8QhYgWJvIAu3qV3womcJO157nG1iQAX/Y+HKjtdgeCTHh9ctd0YW/R+df7ALN5KzsBg9qfXhMRSdne2bkWmhzdGDIBVu9OPd93FkTplDeCpzUNZ3aSejGDS7+ol9vrPy671hpQV3+b5lr3oHrgt6wZdl4KbStn5iFKw+6s2MICVf4dxNwuGvwiN1N/TcUO2M8pIlRf9LCQkV/dfPurCb8=",
+        ]
+        # Set to a day around when these certs were captured
+        patched_x509store.set_time(datetime(2026, 6, 11, 0, 0, 0))
+
+        try:
+            validated = validate_certificate_chain(
+                x5c=[urlsafe_b64decode(cert) for cert in x5c],
+                pem_root_certs_bytes=[google_hardware_attestation_root_4],
+            )
+            self.assertTrue(validated)
+        except Exception as err:
+            print(err)
+            self.fail("validate_certificate_chain failed when it should have succeeded")
