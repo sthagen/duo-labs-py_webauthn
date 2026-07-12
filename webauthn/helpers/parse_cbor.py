@@ -15,7 +15,13 @@ def parse_cbor(data: bytes) -> Any:
     """
     try:
         data = byteslike_to_bytes(data)
-        to_return = cbor2.loads(data)
+        """
+        Disallowing duplicate keys accounts for a Python-specific quirk that allows key overwrite
+        in malicious CBOR, so e.g. {1: "foo", True: "bar"} does not become {1: "bar"}.
+
+        See https://github.com/duo-labs/py_webauthn/issues/265
+        """
+        to_return = cbor2.loads(data, allow_duplicate_keys=False)
     except Exception as exc:
         raise InvalidCBORData("Could not decode CBOR data. See __cause__ for more info") from exc
 

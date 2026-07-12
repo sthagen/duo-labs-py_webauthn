@@ -40,7 +40,7 @@ class TestGenerateRegistrationOptions(TestCase):
         )
         assert options.pub_key_cred_params[0] == PublicKeyCredentialParameters(
             type="public-key",
-            alg=COSEAlgorithmIdentifier.ECDSA_SHA_256,
+            alg=COSEAlgorithmIdentifier.EDDSA,
         )
         assert options.timeout == 60000
         assert options.exclude_credentials == []
@@ -134,3 +134,29 @@ class TestGenerateRegistrationOptions(TestCase):
                 rp_name="Example Co",
                 user_name="",
             )
+
+    def test_suggests_popular_default_supported_algorithms(self) -> None:
+        """
+        Popular = Ed25519 is pretty cool, so use it when it's available. ES256 and RS256 are safe
+        and common fallbacks.
+        """
+        options = generate_registration_options(
+            rp_id="example.com",
+            rp_name="Example Co",
+            user_name="blah",
+            user_id=None,
+        )
+
+        self.assertEqual(len(options.pub_key_cred_params), 3)
+        self.assertEqual(
+            options.pub_key_cred_params[0].alg,
+            COSEAlgorithmIdentifier.EDDSA,
+        )
+        self.assertEqual(
+            options.pub_key_cred_params[1].alg,
+            COSEAlgorithmIdentifier.ECDSA_SHA_256,
+        )
+        self.assertEqual(
+            options.pub_key_cred_params[2].alg,
+            COSEAlgorithmIdentifier.RSASSA_PKCS1_v1_5_SHA_256,
+        )

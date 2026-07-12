@@ -7,6 +7,11 @@ from cryptography.hazmat.primitives.asymmetric.ec import (
 )
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey, RSAPublicNumbers
+from cryptography.hazmat.primitives.asymmetric.mldsa import (
+    MLDSA44PublicKey,
+    MLDSA65PublicKey,
+    MLDSA87PublicKey,
+)
 
 from .algorithms import get_ec2_curve
 from .cose import COSECRV, COSEAlgorithmIdentifier
@@ -14,13 +19,26 @@ from .decode_credential_public_key import (
     DecodedEC2PublicKey,
     DecodedOKPPublicKey,
     DecodedRSAPublicKey,
+    DecodedMLDSAPublicKey,
 )
 from .exceptions import UnsupportedPublicKey
 
 
 def decoded_public_key_to_cryptography(
-    public_key: Union[DecodedOKPPublicKey, DecodedEC2PublicKey, DecodedRSAPublicKey]
-) -> Union[Ed25519PublicKey, EllipticCurvePublicKey, RSAPublicKey]:
+    public_key: Union[
+        DecodedOKPPublicKey,
+        DecodedEC2PublicKey,
+        DecodedRSAPublicKey,
+        DecodedMLDSAPublicKey,
+    ],
+) -> Union[
+    Ed25519PublicKey,
+    EllipticCurvePublicKey,
+    RSAPublicKey,
+    MLDSA44PublicKey,
+    MLDSA65PublicKey,
+    MLDSA87PublicKey,
+]:
     """Convert raw decoded public key parameters (crv, x, y, n, e, etc...) into
     public keys using primitives from the cryptography.io library
     """
@@ -61,5 +79,19 @@ def decoded_public_key_to_cryptography(
         okp_pub_key = Ed25519PublicKey.from_public_bytes(public_key.x)
 
         return okp_pub_key
+    elif isinstance(public_key, DecodedMLDSAPublicKey):
+        try:
+            if public_key.alg == COSEAlgorithmIdentifier.ML_DSA_44:
+                return MLDSA44PublicKey.from_public_bytes(public_key.pub)
+            elif public_key.alg == COSEAlgorithmIdentifier.ML_DSA_65:
+                return MLDSA65PublicKey.from_public_bytes(public_key.pub)
+            elif public_key.alg == COSEAlgorithmIdentifier.ML_DSA_87:
+                return MLDSA87PublicKey.from_public_bytes(public_key.pub)
+            else:
+                raise UnsupportedPublicKey(f"Unrecognized ML-DSA public key: {public_key}")
+        except Exception as exc:
+            raise UnsupportedPublicKey(
+                "An error occurred while decoding the ML-DSA public key. See __cause__ for more info"
+            ) from exc
     else:
         raise UnsupportedPublicKey(f"Unrecognized decoded public key: {public_key}")

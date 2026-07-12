@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from webauthn.helpers import generate_challenge, generate_user_handle, byteslike_to_bytes
+from webauthn.helpers import generate_challenge, generate_user_handle
 from webauthn.helpers.cose import COSEAlgorithmIdentifier
 from webauthn.helpers.structs import (
     AttestationConveyancePreference,
@@ -25,19 +25,11 @@ def _generate_pub_key_cred_params(
 
 
 default_supported_pub_key_algs = [
-    COSEAlgorithmIdentifier.ECDSA_SHA_256,
-    COSEAlgorithmIdentifier.EDDSA,
-    COSEAlgorithmIdentifier.ECDSA_SHA_512,
-    COSEAlgorithmIdentifier.RSASSA_PSS_SHA_256,
-    COSEAlgorithmIdentifier.RSASSA_PSS_SHA_384,
-    COSEAlgorithmIdentifier.RSASSA_PSS_SHA_512,
-    COSEAlgorithmIdentifier.RSASSA_PKCS1_v1_5_SHA_256,
-    COSEAlgorithmIdentifier.RSASSA_PKCS1_v1_5_SHA_384,
-    COSEAlgorithmIdentifier.RSASSA_PKCS1_v1_5_SHA_512,
+    COSEAlgorithmIdentifier.EDDSA,  # -8
+    COSEAlgorithmIdentifier.ECDSA_SHA_256,  # -7
+    COSEAlgorithmIdentifier.RSASSA_PKCS1_v1_5_SHA_256,  # -257
 ]
-default_supported_pub_key_params = _generate_pub_key_cred_params(
-    default_supported_pub_key_algs,
-)
+default_supported_pub_key_params = _generate_pub_key_cred_params(default_supported_pub_key_algs)
 
 
 def generate_registration_options(

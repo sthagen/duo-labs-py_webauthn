@@ -2,7 +2,12 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.hazmat.primitives.asymmetric.padding import MGF1, PSS, PKCS1v15
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
-from cryptography.hazmat.primitives.asymmetric.types import CertificatePublicKeyTypes
+from cryptography.hazmat.primitives.asymmetric.types import PublicKeyTypes
+from cryptography.hazmat.primitives.asymmetric.mldsa import (
+    MLDSA44PublicKey,
+    MLDSA65PublicKey,
+    MLDSA87PublicKey,
+)
 
 from .algorithms import (
     get_ec2_sig_alg,
@@ -17,7 +22,7 @@ from .exceptions import UnsupportedAlgorithm, UnsupportedPublicKey
 
 def verify_signature(
     *,
-    public_key: CertificatePublicKeyTypes,
+    public_key: PublicKeyTypes,
     signature_alg: COSEAlgorithmIdentifier,
     signature: bytes,
     data: bytes,
@@ -52,6 +57,8 @@ def verify_signature(
         else:
             raise UnsupportedAlgorithm(f"Unrecognized RSA signature alg {signature_alg}")
     elif isinstance(public_key, Ed25519PublicKey):
+        public_key.verify(signature, data)
+    elif isinstance(public_key, (MLDSA44PublicKey, MLDSA65PublicKey, MLDSA87PublicKey)):
         public_key.verify(signature, data)
     else:
         raise UnsupportedPublicKey(

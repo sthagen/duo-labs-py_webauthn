@@ -1,6 +1,14 @@
 # Changelog
 
-### v2.8.0
+## v3.0.0
+
+**Changes:**
+
+- `verify_registration_response()` and `verify_authentication_response()` now support use of PQC ML-DSA-44, ML-DSA-65, and ML-DSA-87 algorithms for credential public key signature verification ([#282](https://github.com/duo-labs/py_webauthn/pull/282))
+- `generate_registration_options()` will now encourage authenticators to create keypairs using EDDSA when available, signaling acceptance of ES256 or RS256 when EDDSA is unavailable ([#284](https://github.com/duo-labs/py_webauthn/pull/284))
+- Responses containing malformed CBOR data with duplicate keys will now be rejected ([#285](https://github.com/duo-labs/py_webauthn/pull/285))
+
+## v2.8.0
 
 **Changes:**
 

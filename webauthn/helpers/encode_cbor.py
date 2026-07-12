@@ -16,7 +16,7 @@ def encode_cbor(val: Any) -> bytes:
         to_return = cbor2.dumps(val)
     except Exception as exc:
         raise InvalidCBORData(
-            "Data could not be encoded to CBOR. See __cause__ for more info"
+            "Could not encode data to CBOR. See __cause__ for more info"
         ) from exc
 
     return to_return
